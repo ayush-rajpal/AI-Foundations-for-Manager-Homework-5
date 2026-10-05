@@ -1,0 +1,17 @@
+# secrets: never commit a real .env
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Node / Vite
+node_modules/
+dist/
+
+# temp files from atomic writes
+*.tmp

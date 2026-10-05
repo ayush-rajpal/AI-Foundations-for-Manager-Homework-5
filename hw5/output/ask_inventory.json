@@ -1,0 +1,107 @@
+{
+  "ran_at": "2026-10-04T18:48:41+00:00",
+  "run_id": "7285bde1c34c",
+  "model": "gpt-6-luna",
+  "entry_agent": "inventory",
+  "task": "Smoke test (read-only): for ticket 101, check stock for the requested item and size, find the vendor that can restock it, and say whether that vendor can ship now and when a restock could arrive. Do not delegate.",
+  "tokens_used": 9421,
+  "output": {
+    "agent": "inventory",
+    "ticket_ids": [
+      101
+    ],
+    "summary": "Ticket 101 requests one CC-TEE-WHITE tee in size S; on-hand stock is 0, so the shortfall is 1. The apparel reprint vendor is Bulldog Print Co, but it cannot ship now because invoice 501 is open; no arrival date can be confirmed until payment is approved and the invoice is paid.",
+    "facts": [
+      "Ticket 101 requests SKU CC-TEE-WHITE, size S, quantity 1.",
+      "Stock check: CC-TEE-WHITE size S has 0 units on hand at Aisle B.",
+      "Vendor match is based on specialty: Bulldog Print Co specializes in apparel reprint, matching the tee.",
+      "Bulldog Print Co has a 5-day lead time and cannot ship now; open invoice 501 is $840.00, due 2026-08-28, and was 3 days overdue on 2026-08-31.",
+      "The vendor lookup shows 2026-09-05 as arrival if ordered today, but that estimate only applies once the vendor can ship; no confirmed arrival date is available while blocked."
+    ],
+    "rule_checks": [
+      {
+        "rule": "Vendor never ships restocks while it has an open unpaid invoice.",
+        "satisfied": false,
+        "evidence": "check_vendor: Bulldog Print Co can_ship=false with open invoice 501. check_invoice: invoice 501 status=open, vendor Bulldog Print Co, due 2026-08-28; 3 days overdue on 2026-08-31. Human approval and payment are required before restocking can start."
+      }
+    ],
+    "open_questions": [
+      "When invoice 501 is approved and paid, and when Bulldog Print Co can begin shipping; arrival timing can then be determined from the 5-day lead time."
+    ],
+    "stock_checks": [
+      {
+        "sku": "CC-TEE-WHITE",
+        "size": "S",
+        "requested": 1,
+        "on_hand": 0,
+        "location": "Aisle B",
+        "shortfall": 1
+      }
+    ],
+    "restock_plans": [
+      {
+        "sku": "CC-TEE-WHITE",
+        "size": "S",
+        "qty_needed": 1,
+        "vendor_id": 1,
+        "vendor_name": "Bulldog Print Co",
+        "lead_days": 5,
+        "blocked_by_invoice_id": 501,
+        "earliest_arrival": null
+      }
+    ]
+  },
+  "delegations": [],
+  "board": [
+    {
+      "author": "inventory",
+      "requested_by": "user",
+      "output": {
+        "agent": "inventory",
+        "ticket_ids": [
+          101
+        ],
+        "summary": "Ticket 101 requests one CC-TEE-WHITE tee in size S; on-hand stock is 0, so the shortfall is 1. The apparel reprint vendor is Bulldog Print Co, but it cannot ship now because invoice 501 is open; no arrival date can be confirmed until payment is approved and the invoice is paid.",
+        "facts": [
+          "Ticket 101 requests SKU CC-TEE-WHITE, size S, quantity 1.",
+          "Stock check: CC-TEE-WHITE size S has 0 units on hand at Aisle B.",
+          "Vendor match is based on specialty: Bulldog Print Co specializes in apparel reprint, matching the tee.",
+          "Bulldog Print Co has a 5-day lead time and cannot ship now; open invoice 501 is $840.00, due 2026-08-28, and was 3 days overdue on 2026-08-31.",
+          "The vendor lookup shows 2026-09-05 as arrival if ordered today, but that estimate only applies once the vendor can ship; no confirmed arrival date is available while blocked."
+        ],
+        "rule_checks": [
+          {
+            "rule": "Vendor never ships restocks while it has an open unpaid invoice.",
+            "satisfied": false,
+            "evidence": "check_vendor: Bulldog Print Co can_ship=false with open invoice 501. check_invoice: invoice 501 status=open, vendor Bulldog Print Co, due 2026-08-28; 3 days overdue on 2026-08-31. Human approval and payment are required before restocking can start."
+          }
+        ],
+        "open_questions": [
+          "When invoice 501 is approved and paid, and when Bulldog Print Co can begin shipping; arrival timing can then be determined from the 5-day lead time."
+        ],
+        "stock_checks": [
+          {
+            "sku": "CC-TEE-WHITE",
+            "size": "S",
+            "requested": 1,
+            "on_hand": 0,
+            "location": "Aisle B",
+            "shortfall": 1
+          }
+        ],
+        "restock_plans": [
+          {
+            "sku": "CC-TEE-WHITE",
+            "size": "S",
+            "qty_needed": 1,
+            "vendor_id": 1,
+            "vendor_name": "Bulldog Print Co",
+            "lead_days": 5,
+            "blocked_by_invoice_id": 501,
+            "earliest_arrival": null
+          }
+        ]
+      }
+    }
+  ]
+}

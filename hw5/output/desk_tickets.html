@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Campus Customs · Ticket Desk</title>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --ink: #1c2330;
+    --muted: #5d6778;
+    --line: #e2e6ec;
+    --navy: #0f2a4a;
+    --focus: #2f6fdf;
+
+    --boss: #0f2a4a;
+    --inventory: #1f7a5a;
+    --accounting: #9a5b00;
+    --facilities: #6a3fb5;
+    --customer_service: #b8325a;
+    --human: #39424e;
+
+    --expected: #2f6fdf;
+    --actual: #7b8494;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 15px/1.55 "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* ---------- header ---------- */
+  header {
+    background: var(--navy);
+    color: #fff;
+    padding: 22px 32px 0;
+  }
+  .brand { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .brand h1 { margin: 0; font-size: 21px; font-weight: 650; letter-spacing: .2px; }
+  .brand .sub { color: #b9c6d8; font-size: 13.5px; }
+
+  /* ---------- tabs ---------- */
+  [role="tablist"] { display: flex; gap: 4px; margin-top: 18px; overflow-x: auto; scrollbar-width: none; }
+  [role="tablist"]::-webkit-scrollbar { display: none; }
+  [role="tab"] {
+    appearance: none; border: 0; cursor: pointer; white-space: nowrap;
+    background: transparent; color: #c5d1e1;
+    font: inherit; font-size: 14px; font-weight: 550;
+    padding: 10px 16px 12px; border-radius: 8px 8px 0 0;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  [role="tab"]:hover { color: #fff; background: rgba(255,255,255,.07); }
+  [role="tab"][aria-selected="true"] { background: var(--bg); color: var(--navy); }
+  [role="tab"]:focus-visible { outline: 2px solid #8fb5ff; outline-offset: -2px; }
+  .tab-sep { width: 1px; background: rgba(255,255,255,.2); margin: 8px 6px 10px; flex: none; }
+  .tab-badge {
+    font-size: 11px; font-weight: 600; padding: 1px 7px; border-radius: 999px;
+    background: rgba(255,255,255,.14); color: inherit;
+  }
+  [role="tab"][aria-selected="true"] .tab-badge { background: #e7edf6; }
+
+  /* ---------- layout ---------- */
+  main { max-width: 1180px; margin: 0 auto; padding: 26px 32px 56px; }
+  [role="tabpanel"][hidden] { display: none; }
+  [role="tabpanel"]:focus-visible { outline: none; }
+
+  .ticket-head {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 22px; display: grid; gap: 12px;
+  }
+  .ticket-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .ticket-title h2 { margin: 0; font-size: 19px; font-weight: 650; }
+  .type-pill {
+    font-size: 12px; font-weight: 600; letter-spacing: .3px; text-transform: uppercase;
+    color: var(--muted); background: #eef1f5; padding: 3px 9px; border-radius: 6px;
+  }
+  .status-pill {
+    margin-left: auto; font-size: 12px; font-weight: 600; color: #8a5a00;
+    background: #fff4dd; border: 1px solid #f3dca6; padding: 3px 10px; border-radius: 999px;
+  }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 0; }
+  .meta div { display: grid; }
+  .meta dt { font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  .meta dd { margin: 0; font-weight: 550; }
+  .notes { margin: 0; color: var(--muted); font-size: 14px; }
+  .notes q { color: var(--ink); font-style: italic; }
+
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; align-items: start; }
+  @media (max-width: 900px) { .compare { grid-template-columns: 1fr; } }
+
+  .area {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .area-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 20px; border-bottom: 1px solid var(--line);
+  }
+  .area-head h3 { margin: 0; font-size: 15px; font-weight: 650; letter-spacing: .2px; }
+  .area-head .hint { margin-left: auto; font-size: 12.5px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .area.expected { border-top: 3px solid var(--expected); }
+  .area.expected .dot { background: var(--expected); }
+  .area.actual { border-top: 3px solid var(--actual); background: #fbfbfc; }
+  .area.actual .dot { background: transparent; border: 2px solid var(--actual); }
+
+  .block { padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .block:last-child { border-bottom: 0; }
+  .block h4 {
+    margin: 0 0 10px; font-size: 11.5px; font-weight: 650; text-transform: uppercase;
+    letter-spacing: .5px; color: var(--muted);
+  }
+
+  /* agent chips */
+  .agent {
+    --c: var(--muted);
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--c);
+    background: color-mix(in srgb, var(--c) 9%, white);
+    border: 1px solid color-mix(in srgb, var(--c) 28%, white);
+    padding: 3px 10px 3px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .agent::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .agent.boss { --c: var(--boss); }
+  .agent.inventory { --c: var(--inventory); }
+  .agent.accounting { --c: var(--accounting); }
+  .agent.facilities { --c: var(--facilities); }
+  .agent.customer_service { --c: var(--customer_service); }
+  .agent.human { --c: var(--human); }
+  .agent.human::before { border-radius: 2px; }
+
+  .first-call { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .arrow { color: var(--muted); font-size: 14px; }
+  .reason { margin: 0; }
+
+  /* delegation chain */
+  .chain { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .steps { list-style: none; margin: 0; padding: 0; counter-reset: step; display: grid; gap: 2px; }
+  .steps li {
+    counter-increment: step; position: relative;
+    display: grid; grid-template-columns: 28px 1fr; gap: 10px; padding: 8px 0;
+  }
+  .steps li::before {
+    content: counter(step);
+    width: 24px; height: 24px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 650; color: #fff; background: var(--step, var(--muted));
+  }
+  .steps li:not(:last-child)::after {
+    content: ""; position: absolute; left: 11.5px; top: 34px; bottom: -6px;
+    width: 1px; background: var(--line);
+  }
+  .steps li[data-agent="inventory"] { --step: var(--inventory); }
+  .steps li[data-agent="accounting"] { --step: var(--accounting); }
+  .steps li[data-agent="facilities"] { --step: var(--facilities); }
+  .steps li[data-agent="customer_service"] { --step: var(--customer_service); }
+  .step-who { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 3px; }
+  .step-text { margin: 0; }
+  .approval {
+    display: inline-flex; align-items: center; gap: 5px; margin-top: 6px;
+    font-size: 12px; font-weight: 600; color: #8a5a00;
+    background: #fff4dd; border: 1px solid #f3dca6; border-radius: 6px; padding: 2px 8px;
+  }
+
+  /* tools */
+  .tools { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tool {
+    font: 600 13px/1 ui-monospace, "Cascadia Code", Consolas, monospace;
+    color: var(--navy); background: #eef3fb; border: 1px solid #d5e1f4;
+    padding: 6px 10px; border-radius: 6px;
+  }
+
+  /* empty actual slots */
+  .empty {
+    border: 1.5px dashed #d3d8e0; border-radius: 8px; padding: 14px 16px;
+    color: #8b93a1; font-size: 13.5px; display: flex; align-items: center; gap: 10px;
+  }
+  .empty svg { flex: none; opacity: .7; }
+
+  /* placeholder tabs */
+  .placeholder {
+    background: var(--surface); border: 1px dashed #cfd5de; border-radius: var(--radius);
+    padding: 64px 24px; text-align: center; color: var(--muted);
+  }
+  .placeholder h2 { margin: 0 0 6px; color: var(--ink); font-size: 19px; }
+  .placeholder p { margin: 0; }
+  .placeholder .soon {
+    display: inline-block; margin-bottom: 14px; font-size: 12px; font-weight: 650;
+    letter-spacing: .5px; text-transform: uppercase; color: var(--expected);
+    background: #eaf1fd; padding: 4px 10px; border-radius: 999px;
+  }
+
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 0 0 28px; }
+</style>
+
+
+
+
+<style id="actual-styles">
+  .area.actual.filled { background: var(--surface); border-top-color: #1f7a5a; }
+  .area.actual.filled .dot { background: #1f7a5a; border: 0; }
+  .run-head { display: flex; align-items: center; gap: 8px; margin: 12px 0 6px; font-size: 12.5px; font-weight: 650; color: var(--muted); }
+  .run-head:first-child { margin-top: 0; }
+  .run-head .run-pill { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: #eef1f5; color: var(--ink); }
+  .run-head .run-pill.auto { background: #e9f2ff; color: #1f4f9a; }
+  .steps li.human::before { content: "\270D"; background: #39424e; }
+  .steps li.money::before { content: "$"; background: #9a5b00; }
+  .steps li.record::before { content: "\2713"; background: #0f2a4a; }
+  .steps li.warn::before { content: "!"; background: #b02a2a; }
+  .step-note { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+  .status-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: #eef1f5; }
+  .status-tag.resolved { background: #e3f4ea; color: #1d6b4f; }
+  .status-tag.awaiting_approval { background: #fff4dd; color: #7a5200; }
+  .status-tag.blocked { background: #fdecec; color: #a02323; }
+  .status-tag.in_progress { background: #e6effb; color: #1f5fa8; }
+  .outcome-note { margin: 8px 0 0; font-size: 14px; }
+  .tool .count { font-weight: 500; opacity: .75; margin-left: 4px; }
+  .tool.missing { background: #fdecec; border-color: #f3c4c4; color: #a02323; text-decoration: line-through; }
+  .tool.extra { background: #fff4dd; border-color: #f0dca6; color: #7a5200; }
+  .tool-legend { margin-top: 8px; font-size: 12.5px; color: var(--muted); }
+  .by-agent { margin-top: 8px; display: grid; gap: 4px; font-size: 12.5px; }
+  .steps li.email::before { content: "\2709"; background: #b8325a; }
+  .email-draft { margin-top: 6px; background: #fff; border: 1px solid var(--line); border-left: 4px solid #b8325a; border-radius: 8px; padding: 10px 12px; }
+  .email-meta { margin: 0; font-size: 13px; }
+  .email-meta span { color: var(--muted); }
+  .email-body { margin: 8px 0 0; white-space: pre-wrap; font-size: 13.5px; line-height: 1.5; }
+</style>
+
+<style id="cash-styles">
+  .cash-wrap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; display: grid; gap: 14px; }
+  .cash-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .cash-head h2 { margin: 0; font-size: 19px; }
+  .cash-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .cash-card { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+  .cash-card .label { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--muted); }
+  .cash-card .big { margin: 4px 0 0; font: 700 26px/1.2 ui-monospace, Consolas, monospace; }
+  .neg { color: #a02323; }
+  .cash-note { margin: 0; padding: 10px 14px; border-radius: 8px; font-size: 14px; }
+  .cash-note.ok { background: #e3f4ea; color: #145a40; border: 1px solid #b7e0c7; }
+  .cash-note.bad { background: #fdecec; color: #8a1d1d; border: 1px solid #f2c2c2; }
+  .cash-note.warn { background: #fff4dd; color: #6b4a00; border: 1px solid #f0dca6; }
+  .cash-h3 { margin: 6px 0 0; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--muted); }
+  .cash-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  .cash-table th, .cash-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .cash-table th { font-size: 12px; color: var(--muted); font-weight: 650; }
+  .cash-table .num { text-align: right; font-family: ui-monospace, Consolas, monospace; white-space: nowrap; }
+  .cash-table .why { color: var(--muted); font-size: 12.5px; }
+  .cash-table .start-row td, .cash-table .end-row td { font-weight: 700; background: #f7f8fa; }
+</style>
+<style id="reflection-styles">
+  .reflect { display: grid; gap: 16px; }
+  .reflect-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .reflect-head h2 { margin: 0; font-size: 21px; }
+  .r-toc { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 18px; }
+  .r-toc ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; font-size: 14.5px; }
+  .r-toc a { color: #1f4f9a; }
+  .r-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 22px; }
+  .r-card h3 { margin: 0 0 10px; font-size: 17px; display: flex; align-items: center; gap: 10px; }
+  .r-num { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--navy); color: #fff; font-size: 13px; flex: none; }
+  .r-card p, .r-list li { font-size: 15px; line-height: 1.65; margin: 0 0 10px; max-width: 80ch; }
+  .r-card p:last-child, .r-list li:last-child { margin-bottom: 0; }
+  .r-ticket { padding-left: 12px; border-left: 3px solid var(--line); }
+  .r-chip { display: inline-block; margin-right: 8px; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: #eef1f5; color: var(--navy); vertical-align: 1px; }
+  .r-list { margin: 0; padding-left: 22px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <h1>Campus Customs · Ticket Desk</h1>
+    <span class="sub">Multi-agent operations: expected plan vs. actual run</span>
+  </div>
+
+  <div role="tablist" aria-label="Desk views">
+    <button role="tab" id="tab-t101" aria-controls="panel-t101" aria-selected="true">Ticket 101 <span class="tab-badge">Order</span></button>
+    <button role="tab" id="tab-t102" aria-controls="panel-t102" aria-selected="false" tabindex="-1">Ticket 102 <span class="tab-badge">Rent</span></button>
+    <button role="tab" id="tab-t103" aria-controls="panel-t103" aria-selected="false" tabindex="-1">Ticket 103 <span class="tab-badge">Discount</span></button>
+    <span class="tab-sep" aria-hidden="true"></span>
+    <button role="tab" id="tab-cash" aria-controls="panel-cash" aria-selected="false" tabindex="-1">Cash</button>
+    <button role="tab" id="tab-reflection" aria-controls="panel-reflection" aria-selected="false" tabindex="-1">Reflection</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===================== TICKET 101 ===================== -->
+  <section role="tabpanel" id="panel-t101" aria-labelledby="tab-t101" tabindex="0">
+    <div class="ticket-head">
+      <div class="ticket-title">
+        <h2>Ticket 101 · Bulldog tee</h2>
+        <span class="type-pill">customer_order</span>
+        <span class="status-pill">open</span>
+      </div>
+      <dl class="meta">
+        <div><dt>Requester</dt><dd>Tauhid Zaman</dd></div>
+        <div><dt>Item</dt><dd>CC-TEE-WHITE · size S · qty 1</dd></div>
+        <div><dt>Linked invoice</dt><dd>501</dd></div>
+        <div><dt>Created</dt><dd>2026-08-31 09:15</dd></div>
+      </dl>
+      <p class="notes">Ticket notes: <q>Needs a tee in size S.</q></p>
+    </div>
+
+    <div class="compare">
+      <article class="area expected" aria-label="Expected">
+        <div class="area-head"><span class="dot"></span><h3>Expected</h3><span class="hint">Our plan before the run</span></div>
+
+        <div class="block">
+          <h4>Boss first call</h4>
+          <div class="first-call"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div>
+          <p class="reason">The Boss calls Inventory first because this is a customer merchandise order, so checking stock for SKU CC-TEE-WHITE size S is the first operational step.</p>
+        </div>
+
+        <div class="block">
+          <h4>Delegation flow</h4>
+          <div class="chain">
+            <span class="agent boss">Boss</span><span class="arrow">→</span>
+            <span class="agent inventory">Inventory</span><span class="arrow">→</span>
+            <span class="agent accounting">Accounting</span><span class="arrow">→</span>
+            <span class="agent customer_service">Customer Service</span>
+          </div>
+          <ol class="steps">
+            <li data-agent="inventory">
+              <div>
+                <div class="step-who"><span class="agent inventory">Inventory</span></div>
+                <p class="step-text">Checks stock and finds 0 units, then sees that restocking depends on overdue invoice 501 for Bulldog Print Co.</p>
+              </div>
+            </li>
+            <li data-agent="accounting">
+              <div>
+                <div class="step-who"><span class="agent inventory">Inventory</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div>
+                <p class="step-text">Inventory delegates directly to Accounting to handle the blocker. Accounting confirms cash covers the $840 invoice and drafts a payment approval request for the human.</p>
+                <span class="approval">⚑ Human approval: pay invoice 501 ($840)</span>
+              </div>
+            </li>
+            <li data-agent="customer_service">
+              <div>
+                <div class="step-who"><span class="agent accounting">Accounting</span><span class="arrow">→</span><span class="agent customer_service">Customer Service</span></div>
+                <p class="step-text">Accounting delegates to Customer Service to draft a note explaining the 5-day reprint timeline.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="block">
+          <h4>Expected MCP tools</h4>
+          <div class="tools"><code class="tool">check_stock</code><code class="tool">check_invoice</code><code class="tool">check_cash</code></div>
+        </div>
+      </article>
+
+      <article class="area actual filled" aria-label="Actual" data-ticket="101">
+        <div class="area-head"><span class="dot"></span><h3>Actual</h3><span class="hint">From the audit trail · 3 runs · updated 2026-10-05 18:27</span></div>
+        <div class="block"><h4>Outcome</h4><span class="status-tag resolved">Resolved</span><p class="outcome-note">Resolved — email sent to customer — awaiting response. Customer Service drafted the reply to Tauhid Zaman (&quot;Re: Bulldog tee&quot;); it stays a draft on the board and is never actually emailed. Boss: Restock of 1 CC-TEE-WHITE size S is paid and on order for 2026-09-05; customer reply drafted (not sent).</p></div>
+        <div class="block"><h4>Agents that ran</h4><div class="chain"><span class="agent boss">Boss</span> <span class="agent inventory">Inventory</span> <span class="agent accounting">Accounting</span> <span class="agent customer_service">Customer Service</span></div></div>
+        <div class="block"><h4>Boss first call</h4><div class="first-call"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div><p class="reason">Ticket 101: customer order for 1 × CC-TEE-WHITE size S; linked invoice 501. Check stock, shortfall, matching vendor/lead time, and whether vendor can ship given invoice status. Do not assume customer note supplies other facts.</p></div>
+        <div class="block"><h4>Delegation flow</h4><p class="run-head"><span class="run-pill">Run 1</span>Run started by you</p><div class="chain"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent inventory">Inventory</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><ol class="steps"><li data-agent="inventory"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div><p class="step-text">Ticket 101: customer order for 1 × CC-TEE-WHITE size S; linked invoice 501. Check stock, shortfall, matching vendor/lead time, and whether vendor can ship given invoice status. Do not assume customer note supplies other facts.</p></div></li><li data-agent="accounting"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="step-text">Ticket 101: customer order for 1 × CC-TEE-WHITE size S; linked invoice 501. Check invoice amount/status, cash, and whether payment can be drafted within cash constraints. If invoice is open and affordable, draft payment for human approval; report exact payment order details and constraints.</p></div></li><li class="money"><div><div class="step-who"><span class="agent accounting">Accounting</span></div><p class="step-text">Drafted a $840.00 invoice payment to Bulldog Print Co (Rush reprint CC-TEE-WHITE S).</p><span class="approval">⚑ Sent to the human for approval</span></div></li><li class="record"><div><div class="step-who"><span class="agent boss">Boss</span></div><p class="step-text">Recorded the ticket as <strong>Awaiting sign-off</strong>: Invoice 501 ($840, 3 days overdue) drafted for human approval; size S is out of stock, and Bulldog Print Co cannot ship until the invoice is paid. No restock date promised.</p></div></li><li class="human"><div><div class="step-who"><span class="agent human">You</span></div><p class="step-text">Approved $840.00 to Bulldog Print Co (approved by Ayush Rajpal). Checking $3,400.00 → $2,560.00.</p></div></li></ol><p class="run-head"><span class="run-pill auto">Run 2</span>Automatic re-run after your approval</p><div class="chain"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><ol class="steps"><li data-agent="accounting"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="step-text">CONTINUE ticket 101. Invoice 501 has been human-approved and paid per ticket history; confirmed check_vendor shows Bulldog Print Co (vendor 1) has no open invoices, can_ship=true, 5-day lead time, arrival_if_ordered_today 2026-09-05. Please take only the next step: draft the restock purchase for the one-unit shortfall, CC-TEE-WHITE size S from vendor 1. Check pricing and available cash including rent as needed, follow human-approval/no-negative-cash rules, and report the purchase order details/status.</p></div></li><li class="money"><div><div class="step-who"><span class="agent accounting">Accounting</span></div><p class="step-text">Drafted a $8.00 restock purchase to Bulldog Print Co (Restock 1 x Classic Bulldog Tee (CC-TEE-WHITE S) at 8.00 each).</p><span class="approval">⚑ Sent to the human for approval</span></div></li><li class="human"><div><div class="step-who"><span class="agent human">You</span></div><p class="step-text">Approved $8.00 to Bulldog Print Co (approved by Ayush Rajpal). Checking $2,560.00 → $2,552.00.</p></div></li><li class="record"><div><div class="step-who"><span class="agent boss">Boss</span></div><p class="step-text">Recorded the ticket as <strong>Awaiting sign-off</strong>: Invoice 501 is paid; Accounting drafted the $8 one-unit CC-TEE-WHITE size S restock for human approval; if approved today, expected arrival is 2026-09-05. No customer reply drafted while purchase approval is pending.</p></div></li></ol><p class="run-head"><span class="run-pill auto">Run 3</span>Automatic re-run after your approval</p><div class="chain"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent customer_service">Customer Service</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div><ol class="steps"><li data-agent="customer_service"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent customer_service">Customer Service</span></div><p class="step-text">Ticket 101: continue from prior run; write the single customer reply draft now that purchase approval cleared. Verified CC-TEE-WHITE size S has qty 0 on hand but 1 incoming, paid/on order from Bulldog Print Co, expected arrival 2026-09-05 (check_stock). Prior report confirms linked invoice 501 paid and no open invoices. No payment/purchase approval remains pending. Draft one customer email only; do not send.</p></div></li><li data-agent="inventory"><div><div class="step-who"><span class="agent customer_service">Customer Service</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div><p class="step-text">Find in-stock alternatives in the same category and size for CC-TEE-WHITE size S (find_alternatives) for ticket 101. Report product name, in-stock status/qty and price if available.</p></div></li><li class="email"><div><div class="step-who"><span class="agent customer_service">Customer Service</span></div><p class="step-text">Drafted the customer email (not sent):</p><div class="email-draft"><p class="email-meta"><span>To:</span> Tauhid Zaman</p><p class="email-meta"><span>Subject:</span> <strong>Re: Bulldog tee</strong></p><p class="email-body">Hi Tauhid,
+
+The Classic Bulldog Tee in size S isn’t available right now. The latest arrival date we have is September 5, 2026. As an in-stock alternative, the Basic Hoodie Big Yale in size S is $58.
+
+Let us know if you&#x27;d like that or other alternatives.
+
+Best,
+Campus Customs</p></div></div></li><li class="record"><div><div class="step-who"><span class="agent boss">Boss</span></div><p class="step-text">Recorded the ticket as <strong>Resolved</strong>: Restock of 1 CC-TEE-WHITE size S is paid and on order for 2026-09-05; customer reply drafted (not sent).</p></div></li><li class="record"><div><div class="step-who"><span class="agent runner">Desk</span></div><p class="step-text">Recorded the ticket as <strong>Resolved</strong>: Resolved — email sent to customer — awaiting response. Customer Service drafted the reply to Tauhid Zaman (&quot;Re: Bulldog tee&quot;); it stays a draft on the board and is never actually emailed. Boss: Restock of 1 CC-TEE-WHITE size S is paid and on order for 2026-09-05; customer reply drafted (not sent).</p></div></li></ol></div>
+        <div class="block"><h4>MCP tools called</h4><div class="tools"><code class="tool">✓ check_stock<span class="count">×5</span></code><code class="tool">✓ check_invoice<span class="count">×3</span></code><code class="tool">✓ check_cash<span class="count">×3</span></code><code class="tool extra" title="called, not in the expected list">+ list_tickets<span class="count">×5</span></code><code class="tool extra" title="called, not in the expected list">+ check_vendor<span class="count">×3</span></code><code class="tool extra" title="called, not in the expected list">+ find_alternatives<span class="count">×2</span></code><code class="tool extra" title="called, not in the expected list">+ draft_payment<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ update_ticket<span class="count">×4</span></code><code class="tool extra" title="called, not in the expected list">+ draft_purchase<span class="count">×1</span></code></div><p class="tool-legend">✓ expected and called · <span style="text-decoration:line-through">struck</span> expected but not called · + called but not expected</p><div class="by-agent"><div><span class="agent boss">Boss</span> list_tickets ×4, check_invoice, check_stock ×2, check_vendor ×2, check_cash, update_ticket ×3</div><div><span class="agent inventory">Inventory</span> check_vendor, check_stock, check_invoice, find_alternatives ×2</div><div><span class="agent accounting">Accounting</span> check_invoice, check_cash ×2, draft_payment, check_stock, draft_purchase</div><div><span class="agent customer_service">Customer Service</span> list_tickets, check_stock</div><div><span class="agent runner">Desk</span> update_ticket</div></div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== TICKET 102 ===================== -->
+  <section role="tabpanel" id="panel-t102" aria-labelledby="tab-t102" tabindex="0" hidden>
+    <div class="ticket-head">
+      <div class="ticket-title">
+        <h2>Ticket 102 · Rent due</h2>
+        <span class="type-pill">rent_notice</span>
+        <span class="status-pill">open</span>
+      </div>
+      <dl class="meta">
+        <div><dt>Requester</dt><dd>Elm City Properties</dd></div>
+        <div><dt>Linked lease</dt><dd>1 · Chapel Street shop</dd></div>
+        <div><dt>Created</dt><dd>2026-08-31 11:05</dd></div>
+      </dl>
+      <p class="notes">Ticket notes: <q>Email: shop rent due in 2 days.</q></p>
+    </div>
+
+    <div class="compare">
+      <article class="area expected" aria-label="Expected">
+        <div class="area-head"><span class="dot"></span><h3>Expected</h3><span class="hint">Our plan before the run</span></div>
+
+        <div class="block">
+          <h4>Boss first call</h4>
+          <div class="first-call"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent facilities">Facilities</span></div>
+          <p class="reason">The Boss calls Facilities first because ticket 102 is a facility notice about the store space and lease terms.</p>
+        </div>
+
+        <div class="block">
+          <h4>Delegation flow</h4>
+          <div class="chain">
+            <span class="agent boss">Boss</span><span class="arrow">→</span>
+            <span class="agent facilities">Facilities</span><span class="arrow">→</span>
+            <span class="agent accounting">Accounting</span>
+          </div>
+          <ol class="steps">
+            <li data-agent="facilities">
+              <div>
+                <div class="step-who"><span class="agent facilities">Facilities</span></div>
+                <p class="step-text">Checks lease 1 in the database to verify the actual contract rent of $2,400 and the due date.</p>
+              </div>
+            </li>
+            <li data-agent="accounting">
+              <div>
+                <div class="step-who"><span class="agent facilities">Facilities</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div>
+                <p class="step-text">Facilities delegates directly to Accounting to verify the $3,400 of available cash and prepare the payment request for human sign-off.</p>
+                <span class="approval">⚑ Human approval: pay rent on lease 1 ($2,400)</span>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="block">
+          <h4>Expected MCP tools</h4>
+          <div class="tools"><code class="tool">check_rent</code><code class="tool">check_cash</code></div>
+        </div>
+      </article>
+
+      <article class="area actual filled" aria-label="Actual" data-ticket="102">
+        <div class="area-head"><span class="dot"></span><h3>Actual</h3><span class="hint">From the audit trail · 1 run · updated 2026-10-05 18:27</span></div>
+        <div class="block"><h4>Outcome</h4><span class="status-tag resolved">Resolved</span><p class="outcome-note">Verified lease 1 rent is $2,400 to Elm City Properties; current due date is 2026-10-02. Payment 3 was approved by Ayush Rajpal on 2026-08-31, so no rent payment remains pending.</p></div>
+        <div class="block"><h4>Agents that ran</h4><div class="chain"><span class="agent boss">Boss</span> <span class="agent facilities">Facilities</span> <span class="agent accounting">Accounting</span></div></div>
+        <div class="block"><h4>Boss first call</h4><div class="first-call"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent facilities">Facilities</span></div><p class="reason">Ticket 102: rent notice linked to lease 1; requester claims rent due in 2 days. Verify actual landlord, rent amount, due date against desk date, and report facts.</p></div>
+        <div class="block"><h4>Delegation flow</h4><p class="run-head"><span class="run-pill">Run 1</span>Run started by you</p><div class="chain"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent facilities">Facilities</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><ol class="steps"><li data-agent="facilities"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent facilities">Facilities</span></div><p class="step-text">Ticket 102: rent notice linked to lease 1; requester claims rent due in 2 days. Verify actual landlord, rent amount, due date against desk date, and report facts.</p></div></li><li data-agent="accounting"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="step-text">Ticket 102: rent notice, lease 1. Check cash/open bills and assess whether rent payment can be drafted now; use lease database amount/date, and if appropriate draft payment for human approval. Report any payment order details.</p></div></li><li class="money"><div><div class="step-who"><span class="agent accounting">Accounting</span></div><p class="step-text">Drafted a $2,400.00 rent payment to Elm City Properties (Rent for Chapel Street shop).</p><span class="approval">⚑ Sent to the human for approval</span></div></li><li data-agent="accounting"><div><div class="step-who"><span class="agent facilities">Facilities</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="step-text">Ticket 102 rent notice verified against lease 1: Chapel Street shop, monthly rent $2,400, payee Elm City Properties, next due 2026-09-02 (2 days after desk date 2026-08-31). Please check cash coverage and draft payment for human approval as appropriate. Notice requester matches lease landlord.</p></div></li><li class="human"><div><div class="step-who"><span class="agent human">You</span></div><p class="step-text">Approved $2,400.00 to Elm City Properties (approved by Ayush Rajpal). Checking $2,552.00 → $152.00.</p></div></li><li class="record"><div><div class="step-who"><span class="agent boss">Boss</span></div><p class="step-text">Recorded the ticket as <strong>Resolved</strong>: Verified lease 1 rent is $2,400 to Elm City Properties; current due date is 2026-10-02. Payment 3 was approved by Ayush Rajpal on 2026-08-31, so no rent payment remains pending.</p></div></li></ol></div>
+        <div class="block"><h4>MCP tools called</h4><div class="tools"><code class="tool">✓ check_rent<span class="count">×4</span></code><code class="tool">✓ check_cash<span class="count">×3</span></code><code class="tool extra" title="called, not in the expected list">+ list_tickets<span class="count">×3</span></code><code class="tool extra" title="called, not in the expected list">+ draft_payment<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ update_ticket<span class="count">×1</span></code></div><p class="tool-legend">✓ expected and called · <span style="text-decoration:line-through">struck</span> expected but not called · + called but not expected</p><div class="by-agent"><div><span class="agent boss">Boss</span> list_tickets, check_rent, check_cash, update_ticket</div><div><span class="agent accounting">Accounting</span> list_tickets, check_rent ×2, check_cash ×2, draft_payment</div><div><span class="agent facilities">Facilities</span> list_tickets, check_rent</div></div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== TICKET 103 ===================== -->
+  <section role="tabpanel" id="panel-t103" aria-labelledby="tab-t103" tabindex="0" hidden>
+    <div class="ticket-head">
+      <div class="ticket-title">
+        <h2>Ticket 103 · Bulk hoodie discount</h2>
+        <span class="type-pill">price_override</span>
+        <span class="status-pill">open</span>
+      </div>
+      <dl class="meta">
+        <div><dt>Requester</dt><dd>Yale AI Club</dd></div>
+        <div><dt>Item</dt><dd>CC-HOOD-NAVY · size M · qty 20</dd></div>
+        <div><dt>Created</dt><dd>2026-08-31 16:55</dd></div>
+      </dl>
+      <p class="notes">Ticket notes: <q>Student org wants 20 hoodies, size M, asking for a bulk discount.</q></p>
+    </div>
+
+    <div class="compare">
+      <article class="area expected" aria-label="Expected">
+        <div class="area-head"><span class="dot"></span><h3>Expected</h3><span class="hint">Our plan before the run</span></div>
+
+        <div class="block">
+          <h4>Boss first call</h4>
+          <div class="first-call"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div>
+          <p class="reason">The Boss calls Inventory first because the Yale AI Club wants 20 hoodies, so stock availability has to be checked before pricing is discussed.</p>
+        </div>
+
+        <div class="block">
+          <h4>Delegation flow</h4>
+          <div class="chain">
+            <span class="agent boss">Boss</span><span class="arrow">→</span>
+            <span class="agent inventory">Inventory</span><span class="arrow">→</span>
+            <span class="agent accounting">Accounting</span><span class="arrow">→</span>
+            <span class="agent customer_service">Customer Service</span>
+          </div>
+          <ol class="steps">
+            <li data-agent="inventory">
+              <div>
+                <div class="step-who"><span class="agent inventory">Inventory</span></div>
+                <p class="step-text">Checks stock for CC-HOOD-NAVY size M and finds only 8 units in stock.</p>
+              </div>
+            </li>
+            <li data-agent="accounting">
+              <div>
+                <div class="step-who"><span class="agent inventory">Inventory</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div>
+                <p class="step-text">Inventory delegates directly to Accounting to review the unit cost of each hoodie and set bulk discounts. Accounting also checks how much cash it has and how much more inventory it can buy without cash dropping below 0, then prepares a purchase order for human approval.</p>
+                <span class="approval">⚑ Human approval: purchase order</span>
+              </div>
+            </li>
+            <li data-agent="customer_service">
+              <div>
+                <div class="step-who"><span class="agent accounting">Accounting</span><span class="arrow">→</span><span class="agent customer_service">Customer Service</span></div>
+                <p class="step-text">Accounting delegates directly to Customer Service to draft a proposal offering the available units at the approved discount rate.</p>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <div class="block">
+          <h4>Expected MCP tools</h4>
+          <div class="tools"><code class="tool">check_stock</code><code class="tool">check_pricing</code></div>
+        </div>
+      </article>
+
+      <article class="area actual filled" aria-label="Actual" data-ticket="103">
+        <div class="area-head"><span class="dot"></span><h3>Actual</h3><span class="hint">From the audit trail · 2 runs · updated 2026-10-05 18:27</span></div>
+        <div class="block"><h4>Outcome</h4><span class="status-tag resolved">Resolved</span><p class="outcome-note">Resolved — email sent to customer — awaiting response. Customer Service drafted the reply to Yale AI Club (&quot;Your bulk hoodie request&quot;); it stays a draft on the board and is never actually emailed. Boss: Restock purchase 1 was paid by Ayush Rajpal; 6 hoodies are on order for 2026-09-05. With 8 on hand, 14 of 20 are accounted for; customer reply drafted asking how to proceed.</p></div>
+        <div class="block"><h4>Agents that ran</h4><div class="chain"><span class="agent boss">Boss</span> <span class="agent accounting">Accounting</span> <span class="agent inventory">Inventory</span> <span class="agent customer_service">Customer Service</span></div></div>
+        <div class="block"><h4>Boss first call</h4><div class="first-call"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="reason">Ticket 103: Yale AI Club requests a bulk discount for 20 × CC-HOOD-NAVY, size M. Check the verified pricing/margins and discount policy, and advise whether any override can be approved; do not draft payments/purchases unless required.</p></div>
+        <div class="block"><h4>Delegation flow</h4><p class="run-head"><span class="run-pill">Run 1</span>Run started by you</p><div class="chain"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div><ol class="steps"><li data-agent="accounting"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="step-text">Ticket 103: Yale AI Club requests a bulk discount for 20 × CC-HOOD-NAVY, size M. Check the verified pricing/margins and discount policy, and advise whether any override can be approved; do not draft payments/purchases unless required.</p></div></li><li data-agent="inventory"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent inventory">Inventory</span></div><p class="step-text">Ticket 103: Yale AI Club requests 20 × CC-HOOD-NAVY, size M. Check available stock and any relevant availability facts.</p></div></li><li data-agent="accounting"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent accounting">Accounting</span></div><p class="step-text">Ticket 103 follow-up: Inventory reports shortfall 12 of CC-HOOD-NAVY size M, Bulldog Print Co can ship, and your report shows $152 cash and $22 unit cost. Draft the largest affordable restock purchase quantity (do not exceed the 12-unit shortfall) under the no-negative-cash rule, and report the exact purchase draft and remaining cash. Discount request rate is unspecified; do not treat a proposed 10% as customer-authorized.</p></div></li><li class="money"><div><div class="step-who"><span class="agent accounting">Accounting</span></div><p class="step-text">Drafted a $132.00 restock purchase to Bulldog Print Co (Restock 6 x Basic Hoodie Big Yale (CC-HOOD-NAVY M) at 22.00 each).</p><span class="approval">⚑ Sent to the human for approval</span></div></li><li class="record"><div><div class="step-who"><span class="agent boss">Boss</span></div><p class="step-text">Recorded the ticket as <strong>Awaiting sign-off</strong>: Approved a 10% bulk discount ($52.20 each; $30.20/unit margin), but only 8 of 20 are in stock. Drafted a 6-unit restock for $132 awaiting human approval; 6 units would still be short, and customer reply waits until approval.</p></div></li><li class="human"><div><div class="step-who"><span class="agent human">You</span></div><p class="step-text">Approved $132.00 to Bulldog Print Co (approved by Ayush Rajpal). Checking $152.00 → $20.00.</p></div></li></ol><p class="run-head"><span class="run-pill auto">Run 2</span>Automatic re-run after your approval</p><div class="chain"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent customer_service">Customer Service</span></div><ol class="steps"><li data-agent="customer_service"><div><div class="step-who"><span class="agent boss">Boss</span><span class="arrow">→</span><span class="agent customer_service">Customer Service</span></div><p class="step-text">Ticket 103 (Yale AI Club, bulk order 20 CC-HOOD-NAVY size M). Continue from prior reports; do not re-check. Purchase of 6 units is now paid and check_stock confirms 6 incoming, expected 2026-09-05; 8 currently on hand, total 14, so 6 of the requested 20 remain unfilled. Previously recorded offer is 10% off ($52.20 each; $30.20/unit margin). Draft the single customer reply with these verified facts, be clear the full 20 are not yet available, and ask how they wish to proceed. Keep it as an internal draft only.</p></div></li><li class="email"><div><div class="step-who"><span class="agent customer_service">Customer Service</span></div><p class="step-text">Drafted the customer email (not sent):</p><div class="email-draft"><p class="email-meta"><span>To:</span> Yale AI Club</p><p class="email-meta"><span>Subject:</span> <strong>Your bulk hoodie request</strong></p><p class="email-body">Hi Yale AI Club,
+
+The full 20 Classic Bulldog Hoodies in navy, size M, aren’t available right now: 8 are on hand, with 6 more expected, for 14 total. The latest arrival date we have is September 5, 2026. The 10% bulk price is $52.20 per hoodie.
+
+If a tee could work instead, the Classic Bulldog Tee in size M is in stock for $28.00. Let us know if you’d like that or other alternatives—and how you’d like to proceed with the 14 hoodies available against your request for 20.
+
+Best,
+Campus Customs</p></div></div></li><li class="record"><div><div class="step-who"><span class="agent boss">Boss</span></div><p class="step-text">Recorded the ticket as <strong>In progress</strong>: Restock purchase 1 was paid by Ayush Rajpal; 6 hoodies are on order for 2026-09-05. With 8 on hand, 14 of 20 are accounted for; customer reply drafted asking how to proceed.</p></div></li><li class="record"><div><div class="step-who"><span class="agent runner">Desk</span></div><p class="step-text">Recorded the ticket as <strong>Resolved</strong>: Resolved — email sent to customer — awaiting response. Customer Service drafted the reply to Yale AI Club (&quot;Your bulk hoodie request&quot;); it stays a draft on the board and is never actually emailed. Boss: Restock purchase 1 was paid by Ayush Rajpal; 6 hoodies are on order for 2026-09-05. With 8 on hand, 14 of 20 are accounted for; customer reply drafted asking how to proceed.</p></div></li></ol></div>
+        <div class="block"><h4>MCP tools called</h4><div class="tools"><code class="tool">✓ check_stock<span class="count">×3</span></code><code class="tool missing" title="expected, not called">check_pricing</code><code class="tool extra" title="called, not in the expected list">+ list_tickets<span class="count">×4</span></code><code class="tool extra" title="called, not in the expected list">+ check_discount<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ check_cash<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ find_alternatives<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ check_vendor<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ draft_purchase<span class="count">×1</span></code><code class="tool extra" title="called, not in the expected list">+ update_ticket<span class="count">×3</span></code></div><p class="tool-legend">✓ expected and called · <span style="text-decoration:line-through">struck</span> expected but not called · + called but not expected</p><div class="by-agent"><div><span class="agent boss">Boss</span> list_tickets ×2, update_ticket ×2, check_stock</div><div><span class="agent accounting">Accounting</span> check_stock, check_discount, check_cash, draft_purchase</div><div><span class="agent inventory">Inventory</span> list_tickets, check_stock, find_alternatives, check_vendor</div><div><span class="agent customer_service">Customer Service</span> list_tickets</div><div><span class="agent runner">Desk</span> update_ticket</div></div></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- ===================== CASH ===================== -->
+  <section role="tabpanel" id="panel-cash" aria-labelledby="tab-cash" tabindex="0" hidden>
+    <div class="cash-wrap">
+      <div class="cash-head"><h2>Cash</h2><span class="hint">From the audit trail and cash_accounts (via MCP check_cash) · updated 2026-10-05 18:27</span></div>
+      <div class="cash-cards">
+        <div class="cash-card"><p class="label">Starting balance after reset</p><p class="big">$3,400.00</p></div>
+        <div class="cash-card"><p class="label">Spent (human-approved)</p><p class="big neg">−$3,380.00</p><p class="label">4 payments</p></div>
+        <div class="cash-card"><p class="label">Ending balance in cash_accounts</p><p class="big">$20.00</p></div>
+      </div>
+      <p class="cash-note ok">✓ <strong>Ending balance matches.</strong> cash_accounts (checking) in data/campus_customs_new.db shows $20.00, exactly the starting $3,400.00 minus $3,380.00 in approved payments.</p>
+      <h3 class="cash-h3">Every payment, in order</h3>
+      <table class="cash-table"><thead><tr><th>#</th><th>Ticket</th><th>Type</th><th>Paid to</th><th>What it was for, and why</th><th>Approved by</th><th class="num">Amount</th><th class="num">Balance after</th></tr></thead><tbody><tr class="start-row"><td></td><td colspan="5">Starting balance after the reset (2026-10-05 22:18 UTC)</td><td></td><td class="num">$3,400.00</td></tr><tr><td>1</td><td>#101 · Bulldog tee</td><td>Invoice payment</td><td>Bulldog Print Co</td><td><strong>Rush reprint CC-TEE-WHITE S</strong><br><span class="why">Overdue vendor invoice. The vendor won&#x27;t ship new stock until it&#x27;s paid.</span></td><td>Ayush Rajpal</td><td class="num neg">−$840.00</td><td class="num">$2,560.00</td></tr><tr><td>2</td><td>#101 · Bulldog tee</td><td>Restock purchase</td><td>Bulldog Print Co</td><td><strong>Restock 1 x Classic Bulldog Tee (CC-TEE-WHITE S) at 8.00 each</strong><br><span class="why">Restock order for stock the ticket needed, sized so cash stays at or above $0. Arrives about 2026-09-05.</span></td><td>Ayush Rajpal</td><td class="num neg">−$8.00</td><td class="num">$2,552.00</td></tr><tr><td>3</td><td>#102 · Rent due</td><td>Rent payment</td><td>Elm City Properties</td><td><strong>Rent for Chapel Street shop</strong><br><span class="why">Monthly rent for the shop, at the amount on the lease (not the ticket text).</span></td><td>Ayush Rajpal</td><td class="num neg">−$2,400.00</td><td class="num">$152.00</td></tr><tr><td>4</td><td>#103 · Bulk hoodie discount</td><td>Restock purchase</td><td>Bulldog Print Co</td><td><strong>Restock 6 x Basic Hoodie Big Yale (CC-HOOD-NAVY M) at 22.00 each</strong><br><span class="why">Restock order for stock the ticket needed, sized so cash stays at or above $0. Arrives about 2026-09-05.</span></td><td>Ayush Rajpal</td><td class="num neg">−$132.00</td><td class="num">$20.00</td></tr><tr class="end-row"><td></td><td colspan="5">Ending balance (start − approved payments)</td><td class="num neg">−$3,380.00</td><td class="num">$20.00</td></tr></tbody></table>
+      <h3 class="cash-h3">Per ticket</h3>
+      <table class="cash-table per-ticket"><thead><tr><th>Ticket</th><th>Deductions</th><th class="num">Total</th></tr></thead><tbody><tr><td>#101 · Bulldog tee</td><td>invoice payment $840.00 to Bulldog Print Co; restock purchase $8.00 to Bulldog Print Co</td><td class="num neg">−$848.00</td></tr><tr><td>#102 · Rent due</td><td>rent payment $2,400.00 to Elm City Properties</td><td class="num neg">−$2,400.00</td></tr><tr><td>#103 · Bulk hoodie discount</td><td>restock purchase $132.00 to Bulldog Print Co</td><td class="num neg">−$132.00</td></tr></tbody></table>
+    </div>
+  </section>
+
+  <!-- ===================== REFLECTION ===================== -->
+  <section role="tabpanel" id="panel-reflection" aria-labelledby="tab-reflection" tabindex="0" hidden>
+    <div class="reflect">
+      <div class="reflect-head"><h2>Reflection</h2><p class="hint">The operator's evaluation after the full run on all three tickets.</p></div>
+      <nav class="r-toc" aria-label="Reflection sections"><ol><li><a href="#r-1">Performance Evaluation of the Agents by Ticket</a></li><li><a href="#r-2">Actual vs. Expected Delegation Plans</a></li><li><a href="#r-3">What Would Have Been Simpler as One Agent with Tools - and Why</a></li><li><a href="#r-4">Three New Problems the Current Agent Team Could Solve</a></li><li><a href="#r-5">Three New Problems the Current Agent Team Could NOT Solve</a></li></ol></nav>
+      <article class="r-card" id="r-1" aria-labelledby="r-1-h"><h3 id="r-1-h"><span class="r-num" aria-hidden="true">1</span>Performance Evaluation of the Agents by Ticket</h3><p>Overall, I think the agent team performed well because it focused on following the right process and finding alternatives within the restrictions of design rather than simply trying to resolve every ticket as quickly as possible.</p><p class="r-ticket"><span class="r-chip" aria-hidden="true">Ticket 101</span>For Ticket 101, Inventory correctly identified that size S was completely out of stock and also identified that Bulldog Print Co. was blocked because of the overdue $840 invoice. Instead of trying to bypass the payment requirement or contact the customer directly, Accounting drafted the $840 invoice payment and then the $8 replacement tee purchase, both of which were sent for human approval. After human approval, the Boss asked the customer service to draft an email and Customer Service drafted an internal reply with in-stock alternatives (Basic Hoodie Big Yale in size S for $58).</p><p class="r-ticket"><span class="r-chip" aria-hidden="true">Ticket 102</span>For Ticket 102, Facilities verified the $2,400 rent directly using the lease database rather than relying only on the ticket details. Accounting then checked that there was enough cash before drafting the payment. Once the $2,400 payment was approved, the Boss correctly marked the ticket as resolved because the full contractual obligation had been met.</p><p class="r-ticket"><span class="r-chip" aria-hidden="true">Ticket 103</span>For Ticket 103, the team had to deal with a more difficult cash constraint. Yale AI Club wanted 20 hoodies, but only 8 were in stock, and restocking all 12 would have cost $264, while only $152 was available in cash. Instead of simply rejecting the request, Accounting and Inventory found a middle ground by drafting a restock of 6 hoodies for $132, leaving $20 in cash ensuring the cash balance does not go below 0, while also approving a 10% bulk discount ($52.20 each, preserving a $30.20 unit margin). After this was approved, Customer Service drafted a message explaining that 14 total hoodies were accounted for (8 on hand, 6 arriving September 5, 2026), offering in-stock Bulldog tees as an alternative, and asking the customer how they would like to proceed.</p></article><article class="r-card" id="r-2" aria-labelledby="r-2-h"><h3 id="r-2-h"><span class="r-num" aria-hidden="true">2</span>Actual vs. Expected Delegation Plans</h3><p class="r-ticket"><span class="r-chip" aria-hidden="true">Ticket 101</span>For Ticket 101, our expected plan was a straightforward Boss → Inventory → Accounting → Customer Service sequence that would finish in one continuous flow. In practice, the run had to be broken into three separate phases because of human approval gates. In Run 1, Boss called Inventory, found the stock shortfall and the overdue vendor blocker, and then called Accounting to draft the $840 invoice payment. Once that payment was approved by the human, Run 2 started automatically, where Boss brought Accounting back in to draft the $8 replacement purchase. After that second approval went through, Run 3 kicked off with Boss handing off to Customer Service, who then talked to Inventory to check in-stock alternatives before drafting the final reply to the customer.</p><p class="r-ticket"><span class="r-chip" aria-hidden="true">Ticket 102</span>For Ticket 102, the actual flow was very close to what we expected, but with more back-and-forth and duplicate tool calls. We thought Boss would hand off to Facilities, Facilities would check the lease and pass the numbers to Accounting, and Accounting would draft the $2,400 payment. That did happen, but the agents verified the data multiple times across the turn—checking rent four times and checking cash three times before the draft was submitted and approved.</p><p class="r-ticket"><span class="r-chip" aria-hidden="true">Ticket 103</span>For Ticket 103, the actual process split into two runs instead of our original single chain. We originally expected Boss to go to Inventory first, have Inventory pass directly to Accounting to calculate bulk discounts and restock limits, and then have Accounting hand off to Customer Service. In reality, Boss went to Accounting first to check pricing policy and margin room, then called Inventory to check physical stock, and then went back to Accounting to draft the 6-unit restock for $132 to stay within the $152 cash limit. Only after that purchase was human-approved did Run 2 begin, where Boss brought in Customer Service to draft the email explaining the 14 available hoodies and offering the Bulldog tee alternative.</p><p>Across all three tickets, the Boss ended up acting more like an active hub and coordinator who stayed involved throughout each step rather than simply assigning an initial task and stepping aside. We also saw significantly more tool usage than expected, especially with ticket listing, vendor checks, and alternative product searches.</p></article><article class="r-card" id="r-3" aria-labelledby="r-3-h"><h3 id="r-3-h"><span class="r-num" aria-hidden="true">3</span>What Would Have Been Simpler as One Agent with Tools - and Why</h3><p>I think Ticket 102 would have been much simpler to handle with a single agent that had access to the necessary tools. The task itself was quite straightforward: check the lease terms, check available cash, and draft the payment for human approval.</p><p>Using three separate agents - Boss, Facilities, and Accounting - added additional handoffs without adding much additional reasoning. The agents checked rent four times and checked cash three times across different turns. Each handoff also required the system to pass along the relevant context and run another model call.</p><p>A single agent with tools such as check rent, check cash, and draft payment could have completed the same workflow much more efficiently. I think multi-agent delegation makes more sense when there are different priorities or trade-offs to balance, such as customer needs, inventory constraints, and financial considerations. For a simple administrative task like Ticket 102, however, one agent would have been more efficient.</p></article><article class="r-card" id="r-4" aria-labelledby="r-4-h"><h3 id="r-4-h"><span class="r-num" aria-hidden="true">4</span>Three New Problems the Current Agent Team Could Solve</h3><ol class="r-list"><li><strong>Vendor price increase:</strong> When a vendor increases the price of an item, Inventory could identify which products are affected and check whether alternative vendors can supply them. Accounting could calculate the impact on margins and determine whether the company should raise its selling price. Boss could decide whether to switch vendors or change the customer price. Customer Service could prepare a response for customers asking about the price change.</li><li><strong>Product is selling poorly:</strong> When a product has been sitting in inventory for a long time, Inventory could identify the quantity remaining and determine whether the product can be returned to the vendor. Accounting could calculate the current margin and determine how much of a discount can be offered without creating an excessive loss. Customer Service could draft a promotional message offering the product at the new price.</li><li><strong>Out-of-stock substitutions:</strong> When a customer orders an item that is out of stock, Inventory could search for similar products in the same size, Accounting could check the price and margin and offer a discount since this is not the original product customer was looking for, and Customer Service could draft a message offering the customer an alternative with the discount sharing that since the original product is not available campus customs is offering a unique discount to the customer.</li></ol></article><article class="r-card" id="r-5" aria-labelledby="r-5-h"><h3 id="r-5-h"><span class="r-num" aria-hidden="true">5</span>Three New Problems the Current Agent Team Could NOT Solve</h3><ol class="r-list"><li><strong>Returns and damaged merchandise:</strong> The current system cannot handle customer returns, damaged products, or vendor credit requests. It mainly handles outgoing payments and does not have tools or processes for refunds, returned inventory, or vendor credits. This would require a Returns or Quality Assurance Agent with tools such as recording a return, removing damaged inventory, and requesting a vendor credit.</li><li><strong>Customer invoicing and accounts receivable:</strong> The system cannot manage customers who purchase on credit because it does not have a way to create invoices, track accounts receivable, or record incoming customer payments. This would require a Billing and Receivables Agent.</li><li><strong>Communication with the owner:</strong> The agents cannot communicate with the owner as of now. There can be an agent that communicates with the owner - drafting and sending emails and alerts to the owner and even taking owners input for very high level decisions like big discounts request from customers on bulk orders - these could be done via email where from an email the agent send an email to the owner sharing the situation and possible list of next steps and then the owner reply on that same email which the agent read and pass to the boss.</li></ol></article>
+    </div>
+  </section>
+
+</main>
+
+<footer>Campus Customs Multi-Agent Operations · Homework 5</footer>
+
+<script>
+  // Empty "actual" slots: same placeholder everywhere until the full run fills them in.
+  const EMPTY_ICON =
+    '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2.4"/></svg>';
+  document.querySelectorAll(".empty").forEach((slot) => {
+    if (!slot.textContent.trim()) slot.innerHTML = EMPTY_ICON + "<span>Not run yet</span>";
+  });
+
+  // Accessible tabs: click, arrow keys, Home/End, and the URL hash (#t101, #cash, ...).
+  const tabs = [...document.querySelectorAll('[role="tab"]')];
+  const keyOf = (tab) => tab.id.replace("tab-", "");
+
+  function select(tab, { focus = false, updateHash = true } = {}) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute("aria-selected", on);
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+    });
+    if (focus) tab.focus();
+    if (updateHash) history.replaceState(null, "", "#" + keyOf(tab));
+  }
+
+  tabs.forEach((tab, i) => {
+    tab.addEventListener("click", () => select(tab));
+    tab.addEventListener("keydown", (e) => {
+      const moves = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: tabs.length - 1 };
+      if (!(e.key in moves)) return;
+      e.preventDefault();
+      select(tabs[(moves[e.key] + tabs.length) % tabs.length], { focus: true });
+    });
+  });
+
+  const fromHash = () => tabs.find((t) => keyOf(t) === location.hash.slice(1));
+  window.addEventListener("hashchange", () => fromHash() && select(fromHash(), { updateHash: false }));
+  if (fromHash()) select(fromHash(), { updateHash: false });
+</script>
+</body>
+</html>

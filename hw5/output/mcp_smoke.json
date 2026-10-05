@@ -1,0 +1,101 @@
+{
+  "mcp_server": "campus-customs",
+  "database": "data/campus_customs_new.db",
+  "desk_date_today": "2026-08-31",
+  "tests": [
+    {
+      "prompt": "Use the check_stock tool to check the stock quantity, cost, and list price for SKU 'CC-HOOD-NAVY' in size 'M'",
+      "tool": "check_stock",
+      "arguments": {
+        "sku": "CC-HOOD-NAVY",
+        "size": "M"
+      },
+      "tool_output": {
+        "sku": "CC-HOOD-NAVY",
+        "name": "Basic Hoodie Big Yale",
+        "unit_cost": 22,
+        "list_price": 58,
+        "sizes": [
+          {
+            "size": "M",
+            "qty": 8,
+            "location": "Aisle A"
+          }
+        ]
+      },
+      "database_check": {
+        "inventory": "sku=CC-HOOD-NAVY, name=Basic Hoodie Big Yale, size=M, qty=8, location=Aisle A",
+        "pricing": "sku=CC-HOOD-NAVY, unit_cost=22.0, list_price=58.0",
+        "matches": true
+      }
+    },
+    {
+      "prompt": "Use the check_invoice tool to check the details, vendor status, and payment standing for invoice 501",
+      "tool": "check_invoice",
+      "arguments": {
+        "invoice_id": 501
+      },
+      "tool_output": {
+        "invoice": {
+          "id": 501,
+          "amount": 840,
+          "due_date": "2026-08-28",
+          "status": "open",
+          "description": "Rush reprint CC-TEE-WHITE S",
+          "vendor_id": 1,
+          "vendor_name": "Bulldog Print Co",
+          "vendor_specialty": "apparel reprint",
+          "vendor_lead_days": 5
+        },
+        "today": "2026-08-31",
+        "days_overdue": 3,
+        "cash_accounts": [
+          {
+            "name": "checking",
+            "balance": 3400,
+            "date": "2026-08-31"
+          }
+        ]
+      },
+      "database_check": {
+        "invoices": "id=501, vendor_id=1, amount=840.0, due_date=2026-08-28, status=open, description=Rush reprint CC-TEE-WHITE S",
+        "vendors": "id=1, name=Bulldog Print Co, specialty=apparel reprint, lead_days=5",
+        "desk": "date_today=2026-08-31",
+        "cash_accounts": "name=checking, balance=3400.0, date=2026-08-31",
+        "matches": true
+      }
+    },
+    {
+      "prompt": "Use the check_rent tool to check the lease details, monthly rent amount, and payment due date for lease 1",
+      "tool": "check_rent",
+      "arguments": {
+        "lease_id": 1
+      },
+      "tool_output": {
+        "lease": {
+          "id": 1,
+          "space_name": "Chapel Street shop",
+          "landlord": "Elm City Properties",
+          "monthly_rent": 2400,
+          "next_due": "2026-09-02",
+          "notes": null
+        },
+        "today": "2026-08-31",
+        "days_until_due": 2,
+        "cash_accounts": [
+          {
+            "name": "checking",
+            "balance": 3400,
+            "date": "2026-08-31"
+          }
+        ]
+      },
+      "database_check": {
+        "leases": "id=1, space_name=Chapel Street shop, landlord=Elm City Properties, monthly_rent=2400.0, next_due=2026-09-02, notes=NULL",
+        "desk": "date_today=2026-08-31",
+        "cash_accounts": "name=checking, balance=3400.0, date=2026-08-31",
+        "matches": true
+      }
+    }
+  ]
+}
